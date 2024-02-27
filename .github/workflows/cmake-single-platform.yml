@@ -32,7 +32,7 @@ jobs:
           build-wrapper-linux-x86-64 --out-dir ${{ env.BUILD_WRAPPER_OUT_DIR }} cmake --build build/ --config Release
       - name: Run tests to generate coverage statistics
         run: |
-          ./build/xpdf/pdftotext -raw ../../c4611_sample_explain.pdf
+          ./build/xpdf/pdftotext -raw ./c4611_sample_explain.pdf
       - name: Collect coverage into one XML report
         run: |
           gcovr --sonarqube > coverage.xml
