@@ -10,36 +10,58 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     env:
-      BUILD_WRAPPER_OUT_DIR: build_wrapper_output_directory # Directory where build-wrapper output will be placed
+      BUILD_WRAPPER_OUT_DIR: build_wrapper_output_directory
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis
-      - uses: actions/checkout@v4
-      - name: Set up Python 3.8 for gcovr
-        uses: actions/setup-python@v4
+          fetch-depth: 0
+
+      # CMake Build directory cache
+      - uses: actions/cache@v3
+        with:
+          path: |
+            build
+            build_wrapper_output_directory
+          key: ${{ runner.os }}-build-${{ hashFiles('**/CMakeLists.txt', '**/*.cpp', '**/*.h') }}
+          restore-keys: |
+            ${{ runner.os }}-build-
+
+      # Python dependencies cache
+      - uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - uses: actions/setup-python@v4
         with:
           python-version: 3.8
+
       - name: install gcovr 5.0
         run: |
-          pip install gcovr==5.0 # 5.1 is not supported
-      - name: Install sonar-scanner and build-wrapper
-        uses: SonarSource/sonarcloud-github-c-cpp@v2
+          pip install gcovr==5.0
+
+      - uses: SonarSource/sonarcloud-github-c-cpp@v2
+
       - name: Run build-wrapper
         run: |
-          mkdir build
-          cmake -S . -B build
-          build-wrapper-linux-x86-64 --out-dir ${{ env.BUILD_WRAPPER_OUT_DIR }} cmake --build build/ --config Release
+          mkdir -p build
+          cmake -DCMAKE_C_FLAGS="-fprofile-arcs -ftest-coverage" -DCMAKE_CXX_FLAGS="-fprofile-arcs -ftest-coverage" -S . -B build
+          build-wrapper-linux-x86-64 --out-dir ${{ env.BUILD_WRAPPER_OUT_DIR }} cmake --build build/ --config Debug
+
       - name: Run tests to generate coverage statistics
         run: |
-          ./build/xpdf/pdftotext
+          ./build/xpdf/pdftotext -raw ./c4611_sample_explain.pdf
+
       - name: Collect coverage into one XML report
         run: |
-          gcovr --sonarqube > coverage.xml
+          gcovr --root . --sonarqube > coverage.xml
+
       - name: Run sonar-scanner
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }} # Put the name of your token here
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
           sonar-scanner \
             --define sonar.cfamily.build-wrapper-output="${{ env.BUILD_WRAPPER_OUT_DIR }}" \
