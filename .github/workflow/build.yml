@@ -23,7 +23,7 @@ jobs:
           unzip -o $HOME/.sonar/build-wrapper-linux-x86.zip -d $HOME/.sonar/
           mkdir -p build
           cmake -DCMAKE_C_FLAGS="-fprofile-arcs -ftest-coverage" -DCMAKE_CXX_FLAGS="-fprofile-arcs -ftest-coverage" -S . -B build
-          $HOME/.sonar/build-wrapper-linux-x86/build-wrapper-linux-x86-64 --out-dir ${{ env.BUILD_WRAPPER_OUT_DIR }} cmake --build build/ --config Debug
+          $HOME/.sonar/build-wrapper-linux-x86/build-wrapper-linux-x86-64 --out-dir ${{ env.BUILD_WRAPPER_OUT_DIR }} cmake --build build/ --config Debug -j$(nproc)
         env:
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
           BUILD_WRAPPER_OUT_DIR: build_wrapper_output_directory
