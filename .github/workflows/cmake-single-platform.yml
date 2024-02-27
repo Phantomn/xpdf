@@ -47,8 +47,8 @@ jobs:
       - name: Run build-wrapper
         run: |
           mkdir -p build
-          cmake -S . -B build
-          build-wrapper-linux-x86-64 --out-dir ${{ env.BUILD_WRAPPER_OUT_DIR }} cmake --build build/ --config Release
+          cmake -DCMAKE_C_FLAGS="-fprofile-arcs -ftest-coverage" -DCMAKE_CXX_FLAGS="-fprofile-arcs -ftest-coverage" -S . -B build
+          build-wrapper-linux-x86-64 --out-dir ${{ env.BUILD_WRAPPER_OUT_DIR }} cmake --build build/ --config Debug
 
       - name: Run tests to generate coverage statistics
         run: |
@@ -56,7 +56,7 @@ jobs:
 
       - name: Collect coverage into one XML report
         run: |
-          gcovr --sonarqube > coverage.xml
+          gcovr --root . --sonarqube > coverage.xml
 
       - name: Run sonar-scanner
         env:
